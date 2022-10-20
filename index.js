@@ -30,10 +30,6 @@ function loadMainPrompts() {
           value:"VIEW_ROLES"
         },
         {
-          name:"View All Managers",
-          value:"VIEW_MANAGERS"
-        },
-        {
           name:"View The Total Budget of A Department",
           value:"VIEW_BUDGET"
         },
@@ -81,9 +77,6 @@ function loadMainPrompts() {
       case "VIEW_ROLES":
         viewRoles();
         break;
-      case "VIEW_MANGERS":
-        viewManagers();
-        break;
       case "VIEW_BUDGET":
         viewBudget();
         break;
@@ -114,14 +107,11 @@ function loadMainPrompts() {
   }
 )}
 
-function viewEmployees() {
-  db.findAllEmployees()
-    .then(([rows]) => {
-      let employees = rows;
-      console.log("\n");
-      console.table(employees);
-    })
-    .then(() => loadMainPrompts());
+async function viewEmployees() {
+  let [rows] = await db.findAllEmployees()
+  let title = await db.getRoleTitleByID(rows);
+  console.table(title)
+  loadMainPrompts()
 }
 
 function viewDepartments() {
@@ -134,24 +124,11 @@ function viewDepartments() {
     .then(() => loadMainPrompts());
 }
 
-function viewRoles() {
-  db.findAllRoles()
-    .then(([rows]) => {
-      let roles = rows;
-      console.log("\n");
+async function viewRoles() {
+  let [rows] = await db.findAllRoles()
+  let roles = await db.getDepartmentNameByID(rows);
       console.table(roles);
-    })
-    .then(() => loadMainPrompts());
-}
-
-function viewManagers() {
-  db.findAllManagers()
-    .then(([rows]) => {
-      let managers = rows;
-      console.log("\n");
-      console.table(managers);
-    })
-    .then(() => loadMainPrompts());
+  loadMainPrompts()
 }
 
 function viewBudget() {
@@ -217,9 +194,10 @@ function addRole() {
     message: "Please input new salary."
   },
   {
-    type: "number",
-    name: "department_id",
-    message: "Please input Department id."
+    type: "list",
+    name: "department",
+    choices: [],
+    message: "Please chose a department."
   }
   )
     .then(() => loadMainPrompts());
