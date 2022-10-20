@@ -45,7 +45,7 @@ class DB {
         `SELECT name FROM department WHERE id = ${id}`
       )
         name = name[0].name
-        rows[i].departmentName = name
+        rows[i].department = name
         delete rows[i].department_id
     }
     return rows;
