@@ -1,5 +1,5 @@
 const {connection, pool} = require("./connection");
-const inquier = require("inquirer");
+
 
 class DB {
   constructor(connection) {

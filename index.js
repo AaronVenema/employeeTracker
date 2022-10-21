@@ -161,12 +161,10 @@ async function addEmployee() {
         selectedRoleID= roleId[i].id
       }
     let [selectedManager] = await pool.query(`SELECT employee.id FROM employee WHERE concat(employee.first_name,' ',employee.last_name) = "${manager}";`)
-    console.log(selectedManager)
     let selectedManagerID
     for(i=0; i <selectedManager.length; i++){
       selectedManagerID= selectedManager[i].id
     }
-    console.log(selectedManagerID)
     pool.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ("${first_name}", "${last_name}", ${selectedRoleID}, ${selectedManagerID})`)  
     .then(() => loadMainPrompts());
 }
@@ -179,45 +177,79 @@ async function addRole() {
   for(let i=0; i < depNamesArray.length; i++){
     newDepNameArray.push(depNamesArray[i].name)
   }
+  const {newTitle, newSalary, department} = await inquier.prompt ([
+    {
+      type: "input",
+      name: "newTitle",
+      message: "Please input new title."
+    },
+    { 
+      type: "number",
+      name: "newSalary",
+      message: "Please input new salary."
+    },
+    {
+      type: "list",
+      name: "department",
+      choices: newDepNameArray,
+      message: "Please choose a department."
+    }
+  ])
+  const [depId] = await pool.query(`SELECT id FROM department WHERE name= "${department}"`)
+  let selectedDepID
+    for(i=0; i <depId.length; i++){
+      selectedDepID= depId[i].id
+    }
   
- const {newTitle, newSalary, department} = await inquier.prompt ([
-  {
-    type: "input",
-    name: "newTitle",
-    message: "Please input new title."
-  },
-  { 
-    type: "number",
-    name: "newSalary",
-    message: "Please input new salary."
-  },
-  {
-    type: "list",
-    name: "department",
-    choices: newDepNameArray,
-    message: "Please choose a department."
+    pool.query(`INSERT INTO role (title, salary, department_id) VALUES ("${newTitle}", ${newSalary}, ${selectedDepID})`)
+    .then(() =>{
+      loadMainPrompts()
+    })
+}
+
+async function updateRole() {
+  let [employeeNameArray] = await pool.query(
+    `SELECT employee.id, concat(employee.first_name,' ',employee.last_name) AS employee FROM employee;`
+  )
+  let newEmployeeArray = []
+  for(let i=0; i < employeeNameArray.length; i++){
+    newEmployeeArray.push(employeeNameArray[i].employee)
   }
-])
- const [depId] = await pool.query(`SELECT id FROM department WHERE name= "${department}"`)
- let selectedDepID
-  for(i=0; i <depId.length; i++){
-    selectedDepID= depId[i].id
+  let [roleNamesArray] = await pool.query(
+    `SELECT title FROM role;`
+  )
+  let newRoleNameArray = []
+  for(let i=0; i < roleNamesArray.length; i++){
+    newRoleNameArray.push(roleNamesArray[i].title)
   }
- 
-  pool.query(`INSERT INTO role (title, salary, department_id) VALUES ("${newTitle}", ${newSalary}, ${selectedDepID})`)
+  const {selectedEmp, newTitle } = await inquier.prompt ([
+    {
+      type: "list",
+      name: "selectedEmp",
+      choices: newEmployeeArray,
+      message: "Please choose an employee to edit."
+    },
+    {
+      type: "list",
+      name: "newTitle",
+      choices: newRoleNameArray,
+      message: "Please choose a  new role."
+    }
+  ])
+  let [roleId] = await pool.query(`SELECT id FROM role WHERE title= "${newTitle}"`)
+  let selectedRoleID
+    for(i=0; i <roleId.length; i++){
+      selectedRoleID= roleId[i].id
+    }
+  let [newSelectedEmp] = await pool.query(`SELECT employee.id FROM employee WHERE concat(employee.first_name,' ',employee.last_name) = "${selectedEmp}";`)
+  let selectedEmpID
+  for(i=0; i <newSelectedEmp.length; i++){
+    selectedEmpID= newSelectedEmp[i].id
+  }
+  pool.query(`UPDATE employee SET role_ID= ${selectedRoleID} WHERE id = ${selectedEmpID}`)
   .then(() =>{
     loadMainPrompts()
   })
 }
-
-function updateRole() {
-  inquier.prompt ({
-    type: "input",
-    name: "role",
-    message: "Please input updated role."
-  })
-    .then(() => loadMainPrompts());
-}
-
-
+    
 init();
