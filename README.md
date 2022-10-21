@@ -10,7 +10,7 @@
 * [Acceptance Criteria](#Acceptance-Criteria)
 
 ### Demo
-![gif]("https://github.com/AaronVenema/employeeTracker/blob/main/demo/demoGif.gif")
+![gif](https://github.com/AaronVenema/employeeTracker/blob/main/demo/demoGif.gif)
 
 ### Description
 employeeTracker is an mysql2 application that can help the user stay organized when managing departments, roles, and employees. It features the ability to add departments, roles, employees. It features the ability to view departments, roles, employees. It features the ability to update roles. 
