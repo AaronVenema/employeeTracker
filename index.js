@@ -1,9 +1,8 @@
-
 const inquier = require("inquirer");
 const logo = require("asciiart-logo");
 require("console.table");
 const db = require("./db/dbhelper");
-const { connection } = require("./db/connection");
+const { connection, pool } = require("./db/connection");
 const { newDepartment } = require("./db/dbhelper");
 
 function init() {
@@ -30,10 +29,6 @@ function loadMainPrompts() {
           value:"VIEW_ROLES"
         },
         {
-          name:"View The Total Budget of A Department",
-          value:"VIEW_BUDGET"
-        },
-        {
           name:"Add A Department",
           value:"ADD_DEPARTMENT"
         },
@@ -49,23 +44,10 @@ function loadMainPrompts() {
           name:"Update An Employe Role",
           value:"UPDATE_ROLE"
         },
-        {
-          name:"Delete Department",
-          value:"Delete_DEPARTMENT"
-        },
-        {
-          name:"Delete Role",
-          value:"Delete_ROLE"
-        },
-        {
-          name:"Delete Employee",
-          value:"Delete_Employee"
-        }
       ]
     }
   ).then(res => {
     let choice = res.choice;
-    // Call the appropriate function depending on what the user chose
     
     switch (choice) {
       case "VIEW_EMPLOYEES":
@@ -77,9 +59,9 @@ function loadMainPrompts() {
       case "VIEW_ROLES":
         viewRoles();
         break;
-      case "VIEW_BUDGET":
-        viewBudget();
-        break;
+      case "UPDATE_ROLE":
+        updateRole();
+        break;  
       case "ADD_DEPARTMENT":
         addDepartment();
         break;
@@ -88,18 +70,6 @@ function loadMainPrompts() {
         break;
       case "ADD_EMPLOYEE":
         addEmployee();
-        break;
-      case "UPDATE_ROLE":
-        updateRole();
-        break;
-      case "DELETE_DEPARTMENT":
-        deleteDepartment();
-        break;
-      case "DELETE_ROLE":
-        deleteRole();
-        break;
-      case "DELETE_EMPLOYEE":
-        deleteEmployee();
         break;
       default:
         connection.end();
@@ -131,26 +101,18 @@ async function viewRoles() {
   loadMainPrompts()
 }
 
-function viewBudget() {
-  db.findAllBudget()
-    .then(([rows]) => {
-      let budget = rows;
-      console.log("\n");
-      console.table(budget);
-    })
-    .then(() => loadMainPrompts());
-}
-
 function addDepartment() {
   inquier.prompt ({
     type: "input",
-    name: "department",
+    name: "newDepartment",
     message: "Please input new department name."
   })
-    .then((answers) => {
-      newDepartment(answers)
+    .then((answer) => {
+       newDepartment(answer)
     })
-    .then(() => loadMainPrompts());
+    .then(() =>{
+      loadMainPrompts()
+    })
 }
 
 function addEmployee() {
@@ -182,25 +144,43 @@ function addEmployee() {
     .then(() => loadMainPrompts());
 }
 
-function addRole() {
-  inquier.prompt ({
+async function addRole() {
+  let [depNamesArray] = await pool.query(
+    `SELECT name FROM department;`
+  )
+  let newDepNameArray = []
+  for(let i=0; i < depNamesArray.length; i++){
+    newDepNameArray.push(depNamesArray[i].name)
+  }
+  
+ const {newTitle, newSalary, department} = await inquier.prompt ([
+  {
     type: "input",
-    name: "title",
+    name: "newTitle",
     message: "Please input new title."
   },
   { 
     type: "number",
-    name: "salary",
+    name: "newSalary",
     message: "Please input new salary."
   },
   {
     type: "list",
     name: "department",
-    choices: [],
+    choices: newDepNameArray,
     message: "Please chose a department."
   }
-  )
-    .then(() => loadMainPrompts());
+])
+ const [depId] = await pool.query(`SELECT id FROM department WHERE name= "${department}"`)
+ let selectedDepID
+  for(i=0; i <depId.length; i++){
+    selectedDepID= depId[i].id
+  }
+ 
+  pool.query(`INSERT INTO role (title, salary, department_id) VALUES ("${newTitle}", ${newSalary}, ${selectedDepID})`)
+  .then(() =>{
+    loadMainPrompts()
+  })
 }
 
 function updateRole() {
@@ -212,34 +192,5 @@ function updateRole() {
     .then(() => loadMainPrompts());
 }
 
-function deleteDepartment() {
-  viewDepartments();
-  inquier.prompt ({
-    type: "lists",
-    name: "department",
-    message: "Please select the department you wish to delete."
-  })
-    .then(() => loadMainPrompts());
-}
-
-function deleteRole() {
-  viewRoles();
-  inquier.prompt ({
-    type: "lists",
-    name: "role",
-    message: "Please select the role you wish to delete."
-  })
-    .then(() => loadMainPrompts());
-}
-
-function deleteEmployee() {
-  viewEmployees();
-  inquier.prompt ({
-    type: "lists",
-    name: "employee",
-    message: "Please select the employee you wish to delete."
-  })
-    .then(() => loadMainPrompts());
-}
 
 init();

@@ -1,4 +1,5 @@
-const connection = require("./connection");
+const {connection, pool} = require("./connection");
+const inquier = require("inquirer");
 
 class DB {
   constructor(connection) {
@@ -23,22 +24,19 @@ class DB {
     );
   }
 
-  findAllBudget() {
-    return this.connection.promise().query(
-      "SELECT * FROM department;",
-      "SUM(salary);"
-    );
-  }  
-
-  newDepartment() {
-    connection.query("INSERT INTO department SET")
+  async newDepartment(answer) {
+    connection.query(`INSERT INTO department (name)VALUES("${answer.newDepartment}")`, (err, res)=>{
+      if(err) return err
+    })
   } 
 
   newRole() {
-    connection.query("INSERT INTO role SET")
+    connection.query(`INSERT INTO role (name)VALUES("${answer.newTitle}")`, (err, res)=>{
+      if(err) return err
+    })
   }
 
-  async getDepartmentNameByID(rows){
+  async getDepartmentNameByID(rows) {
     for(let i = 0; i < rows.length; i++){
       let id = rows[i].department_id
       let [name] = await connection.promise().query(
@@ -51,7 +49,7 @@ class DB {
     return rows;
   }
 
-  async getRoleTitleByID(rows){
+  async getRoleTitleByID(rows) {
     for(let i = 0; i < rows.length; i++){
       let id = rows[i].role_id
       let managerId =rows[i].manager_id
@@ -76,7 +74,6 @@ class DB {
     }
     return rows;
   }
-
 }
 
 module.exports = new DB(connection);
