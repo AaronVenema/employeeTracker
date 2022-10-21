@@ -115,32 +115,59 @@ function addDepartment() {
     })
 }
 
-function addEmployee() {
-  inquier.prompt ({
-    type: "input",
-    name: "first_name",
-    message: "Please input new employee first name."
-  },
-  {
-    type: "input",
-    name: "last_name",
-    message: "Please input new employee last name."
-  },
-  {
-    type: "number",
-    name: "department_id",
-    message: "Please input new Employee's department id."
-  },
-  {
-    type: "number",
-    name: "role_id",
-    message: "Please input new Employee's role id."
-  },
-  {
-    type: "number",
-    name: "manager_id",
-    message: "Please input employee's Manager id."
-  })
+async function addEmployee() {
+  let [roleNamesArray] = await pool.query(
+    `SELECT title FROM role;`
+  )
+
+  let newRoleNameArray = []
+  for(let i=0; i < roleNamesArray.length; i++){
+    newRoleNameArray.push(roleNamesArray[i].title)
+  }
+  let [managerNameArray] = await pool.query(
+    `SELECT employee.id, concat(employee.first_name,' ',employee.last_name) AS employee FROM employee;`
+  )
+  let newManagerArray = []
+  for(let i=0; i < managerNameArray.length; i++){
+    newManagerArray.push(managerNameArray[i].employee)
+  }
+  const {first_name, last_name, role, manager}= await inquier.prompt ([
+    {
+      type: "input",
+      name: "first_name",
+      message: "Please input new employee first name."
+    },
+    {
+      type: "input",
+      name: "last_name",
+      message: "Please input new employee last name."
+    },
+    {
+      type: "list",
+      name: "role",
+      choices: newRoleNameArray,
+      message: "Please choose a role."
+    },
+    {
+      type: "list",
+      name: "manager",
+      choices: newManagerArray,
+      message: "Please choose a manager."
+    }
+  ])
+    let [roleId] = await pool.query(`SELECT id FROM role WHERE title= "${role}"`)
+    let selectedRoleID
+      for(i=0; i <roleId.length; i++){
+        selectedRoleID= roleId[i].id
+      }
+    let [selectedManager] = await pool.query(`SELECT employee.id FROM employee WHERE concat(employee.first_name,' ',employee.last_name) = "${manager}";`)
+    console.log(selectedManager)
+    let selectedManagerID
+    for(i=0; i <selectedManager.length; i++){
+      selectedManagerID= selectedManager[i].id
+    }
+    console.log(selectedManagerID)
+    pool.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ("${first_name}", "${last_name}", ${selectedRoleID}, ${selectedManagerID})`)  
     .then(() => loadMainPrompts());
 }
 
@@ -168,7 +195,7 @@ async function addRole() {
     type: "list",
     name: "department",
     choices: newDepNameArray,
-    message: "Please chose a department."
+    message: "Please choose a department."
   }
 ])
  const [depId] = await pool.query(`SELECT id FROM department WHERE name= "${department}"`)
